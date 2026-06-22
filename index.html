@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AeroShield // ZKP Privacy Preserving Transactions</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="glow-bg"></div>
+    
+    <header class="app-header">
+        <div class="logo">
+            <i class="fa-solid fa-shield-halved logo-icon"></i>
+            <span>AERO<span class="highlight">SHIELD</span></span>
+            <span class="badge">ZKP SIMULATOR</span>
+        </div>
+        <nav class="nav-tabs">
+            <button class="nav-btn active" data-tab="mixer"><i class="fa-solid fa-shuffle"></i> Mixing Pool</button>
+            <button class="nav-btn" data-tab="merkle"><i class="fa-solid fa-sitemap"></i> Merkle Tree</button>
+            <button class="nav-btn" data-tab="sandbox"><i class="fa-solid fa-bug-slash"></i> Attack Sandbox</button>
+            <button class="nav-btn" data-tab="architecture"><i class="fa-solid fa-graduation-cap"></i> Architecture</button>
+        </nav>
+    </header>
+
+    <main class="app-container">
+        <!-- Top Metrics Row -->
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon"><i class="fa-solid fa-database text-purple"></i></div>
+                <div class="metric-info">
+                    <span class="metric-label">Merkle Root</span>
+                    <span class="metric-value code-font" id="metric-root">Loading...</span>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon"><i class="fa-solid fa-users text-cyan"></i></div>
+                <div class="metric-info">
+                    <span class="metric-label">Active Deposits</span>
+                    <span class="metric-value" id="metric-deposits">0 / 16</span>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon"><i class="fa-solid fa-ban text-red"></i></div>
+                <div class="metric-info">
+                    <span class="metric-label">Spent Nullifiers</span>
+                    <span class="metric-value" id="metric-nullifiers">0</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: Mixing Pool & Mixer Core -->
+        <section id="tab-mixer" class="tab-content active">
+            <div class="dashboard-grid">
+                <!-- Deposit Area -->
+                <div class="panel-card glass">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-arrow-down-long text-cyan"></i> 1. Anonymous Deposit</h2>
+                        <p class="subtitle">Submit a secret commitment hash to join the mixing pool.</p>
+                    </div>
+                    
+                    <div class="panel-body">
+                        <button class="btn btn-primary btn-block" id="btn-deposit">
+                            <i class="fa-solid fa-coins"></i> Deposit 1.0 TORN
+                        </button>
+
+                        <div class="credentials-box hidden" id="deposit-result-box">
+                            <div class="box-title">
+                                <i class="fa-solid fa-key"></i> Save Your Secret Note (Private)
+                                <span class="danger-tag">DO NOT SHARE</span>
+                            </div>
+                            <p class="box-desc">You will need these secrets to withdraw anonymously later. The contract only stores the commitment hash.</p>
+                            
+                            <div class="cred-field">
+                                <label>Leaf Index</label>
+                                <div class="value-row">
+                                    <span class="code-font" id="res-index">-</span>
+                                </div>
+                            </div>
+                            <div class="cred-field">
+                                <label>Secret key (s)</label>
+                                <div class="value-row">
+                                    <span class="code-font truncate" id="res-secret">-</span>
+                                    <button class="copy-btn" data-target="res-secret"><i class="fa-regular fa-copy"></i></button>
+                                </div>
+                            </div>
+                            <div class="cred-field">
+                                <label>Nullifier (n)</label>
+                                <div class="value-row">
+                                    <span class="code-font truncate" id="res-nullifier">-</span>
+                                    <button class="copy-btn" data-target="res-nullifier"><i class="fa-regular fa-copy"></i></button>
+                                </div>
+                            </div>
+                            <div class="cred-field">
+                                <label>Commitment C = H(g^s || n)</label>
+                                <div class="value-row">
+                                    <span class="code-font truncate text-cyan" id="res-commitment">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="wallet-notes-section">
+                            <h3><i class="fa-solid fa-wallet"></i> My Session Notes (Browser Wallet)</h3>
+                            <div class="notes-list" id="notes-list">
+                                <div class="empty-placeholder">No deposits made in this session yet. Click Deposit above to start.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Withdraw Area -->
+                <div class="panel-card glass">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-arrow-up-long text-purple"></i> 2. Anonymous Withdrawal</h2>
+                        <p class="subtitle">Prove ownership of a commitment without linking to your deposit.</p>
+                    </div>
+
+                    <div class="panel-body">
+                        <form id="withdraw-form" onsubmit="return false;">
+                            <div class="form-group">
+                                <label for="withdraw-index">Deposit Leaf Index</label>
+                                <input type="number" id="withdraw-index" placeholder="e.g. 0" min="0" max="15" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="withdraw-secret">Secret Key (s)</label>
+                                <input type="text" id="withdraw-secret" placeholder="Hex string generated at deposit" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="withdraw-nullifier">Nullifier (n)</label>
+                                <input type="text" id="withdraw-nullifier" placeholder="Hex string generated at deposit" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="withdraw-recipient">Recipient Address (Withdraw destination)</label>
+                                <input type="text" id="withdraw-recipient" placeholder="e.g. 0x71C765... (new clean address)" value="0x3f5CE4E5a3D23f001A837A3aE75c40De32A2d7aB" required>
+                            </div>
+                            
+                            <button type="button" class="btn btn-accent btn-block" id="btn-withdraw">
+                                <i class="fa-solid fa-shield-halved"></i> Generate Proof & Withdraw
+                            </button>
+                        </form>
+
+                        <div class="zkp-log-panel hidden" id="zkp-log-panel">
+                            <h3><i class="fa-solid fa-microchip"></i> ZKP Execution Trace</h3>
+                            <div class="console-box" id="zkp-console"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mixing Pool Visualizer -->
+            <div class="panel-card glass mt-4">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-water-ladder text-cyan"></i> Mixing Pool Commitments</h2>
+                    <p class="subtitle">These commitments form the anonymity set. Withdrawals are mathematically unlinkable back to deposits.</p>
+                </div>
+                <div class="panel-body">
+                    <div class="commitments-pool" id="commitments-pool">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: Merkle Tree Visualizer -->
+        <section id="tab-merkle" class="tab-content">
+            <div class="panel-card glass">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-sitemap text-purple"></i> Merkle Tree (Depth 4)</h2>
+                    <p class="subtitle">Visualize commitments stored as leaves and how the paths build up to the Root. Click on any active leaf to view its membership path.</p>
+                </div>
+                <div class="panel-body merkle-tree-container">
+                    <svg id="merkle-svg" width="100%" height="450"></svg>
+                    
+                    <div class="path-details-card hidden" id="path-details-box">
+                        <h3><i class="fa-solid fa-circle-info text-cyan"></i> Merkle Path for Leaf <span id="path-leaf-idx">#0</span></h3>
+                        <div class="path-steps" id="path-steps-list"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: Attack Sandbox -->
+        <section id="tab-sandbox" class="tab-content">
+            <div class="sandbox-grid">
+                <div class="panel-card glass">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-shield-virus text-red"></i> Attack Vectors Sandbox</h2>
+                        <p class="subtitle">Select a deposit node to run simulated attack strategies and witness how the zero-knowledge verification prevents theft, double spending, and spoofing.</p>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label>Select Deposit to Target</label>
+                            <select class="form-control" id="sandbox-deposit-select">
+                                <option value="">-- No deposits available --</option>
+                            </select>
+                        </div>
+
+                        <div class="attack-controls">
+                            <!-- Attack Card 1 -->
+                            <div class="attack-card">
+                                <div class="attack-info">
+                                    <h4>Double Spend Attack</h4>
+                                    <p>Attempts to withdraw funds a second time using the same secret. The nullifier registry should catch it.</p>
+                                </div>
+                                <button class="btn btn-danger btn-sm run-attack-btn" data-attack="double_spend">
+                                    <i class="fa-solid fa-bolt"></i> Execute
+                                </button>
+                            </div>
+
+                            <!-- Attack Card 2 -->
+                            <div class="attack-card">
+                                <div class="attack-info">
+                                    <h4>Recipient Hijack Attack</h4>
+                                    <p>Intercepts a valid proof and modifies the public recipient address to divert funds to an attacker's address. Schnorr signature should break.</p>
+                                </div>
+                                <button class="btn btn-danger btn-sm run-attack-btn" data-attack="tamper_recipient">
+                                    <i class="fa-solid fa-bolt"></i> Execute
+                                </button>
+                            </div>
+
+                            <!-- Attack Card 3 -->
+                            <div class="attack-card">
+                                <div class="attack-info">
+                                    <h4>Fake Secret Attack</h4>
+                                    <p>Tries to claim a commitment leaf with a randomized fake secret. The commitment recalculation should fail verification.</p>
+                                </div>
+                                <button class="btn btn-danger btn-sm run-attack-btn" data-attack="invalid_secret">
+                                    <i class="fa-solid fa-bolt"></i> Execute
+                                </button>
+                            </div>
+
+                            <!-- Attack Card 4 -->
+                            <div class="attack-card">
+                                <div class="attack-info">
+                                    <h4>Fake Merkle Path Attack</h4>
+                                    <p>Submits a modified Merkle path to claim a commitment that was never deposited. Root reconstruction should mismatch.</p>
+                                </div>
+                                <button class="btn btn-danger btn-sm run-attack-btn" data-attack="fake_merkle_path">
+                                    <i class="fa-solid fa-bolt"></i> Execute
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-card glass flex-col">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-terminal text-red"></i> Sandbox Security Logs</h2>
+                        <p class="subtitle">Real-time verifier execution logs and attack prevention diagnostics.</p>
+                    </div>
+                    <div class="panel-body flex-grow">
+                        <div class="console-box full-height" id="sandbox-console">
+                            <div class="console-line system">[System] Sandbox initialized. Ready for attack simulation inputs.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: Architecture Comparison -->
+        <section id="tab-architecture" class="tab-content">
+            <div class="panel-card glass">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-circle-nodes text-cyan"></i> Cryptographic Architecture Comparison</h2>
+                    <p class="subtitle">Understand the difference between this implementation and the production-level Tornado Cash contract.</p>
+                </div>
+                <div class="panel-body">
+                    <div class="table-container">
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>Feature</th>
+                                    <th>AeroShield (This Simulator)</th>
+                                    <th>Tornado Cash (Production Ethereum)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="bold">ZKP Architecture</td>
+                                    <td>
+                                        <span class="badge badge-cyan">Schnorr & Hiding Witness</span><br>
+                                        Schnorr proof of discrete log for secret ownership + witness-hiding Merkle verification.
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-purple">zk-SNARK (Groth16)</span><br>
+                                        General-purpose arithmetic circuits compiled into an R1CS and verified on-chain in gas-efficient steps.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="bold">Merkle Tree Location</td>
+                                    <td>Memory storage on backend server (representing ledger).</td>
+                                    <td>On-chain storage in Ethereum smart contract (representing global state).</td>
+                                </tr>
+                                <tr>
+                                    <td class="bold">Double Spending Protection</td>
+                                    <td>
+                                        <span class="bold">Nullifier registry</span> (storing spent $H(n) = \text{SHA256}(n)$).
+                                    </td>
+                                    <td>
+                                        <span class="bold">Nullifier registry</span> (storing spent Poseidon hash commitment nullifiers on-chain).
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="bold">Anonymity Set size</td>
+                                    <td>Up to 16 leaves (Depth 4) for immediate visual feedback.</td>
+                                    <td>Up to $1,048,576$ leaves (Depth 20) in production pools.</td>
+                                </tr>
+                                <tr>
+                                    <td class="bold">Gas / Prover Overhead</td>
+                                    <td>Extremely light. Generated in fractions of a second on client and verified instantly.</td>
+                                    <td>Computationally heavy for client prover (takes seconds). Gas verification cost is roughly ~300k gas.</td>
+                                </tr>
+                                <tr>
+                                    <td class="bold">Key Image / Binding</td>
+                                    <td>Challenge binds public key $Y$, recipient $A$, and random $R_{schnorr}$. Prevents hijackers.</td>
+                                    <td>Proof hashes are bound to the recipient, fee, and relayer addresses to prevent relay hijacking.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="note-box mt-4">
+                        <h4><i class="fa-solid fa-lightbulb text-purple"></i> Deep Cryptographic Insights</h4>
+                        <p>In our system, when a user deposits, they submit $C = \text{SHA256}(Y || n)$ where $Y = g^s \pmod p$.
+                        During withdrawal, a real zk-SNARK would require the user to send only a cryptographic proof $\pi = (\pi_A, \pi_B, \pi_C)$ containing three elliptic curve points, alongside public inputs: Merkle Root $R$, Nullifier Hash $H_n$, and recipient $A$.
+                        The circuit verifies that the prover knows the secret keys without leaking them. Our simulator models this circuit execution directly: the prover's witness values ($s$, $n$, path) are processed in the `verify_proof` function, mimicking the constraints a SNARK circuit checks, while demonstrating a real Schnorr mathematical proof for the ownership element.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>&copy; 2026 AeroShield ZKP Simulator. Built with Zero-Knowledge principles.</p>
+    </footer>
+
+    <!-- App JS -->
+    <script src="app.js"></script>
+</body>
+</html>
