@@ -38,8 +38,6 @@ The application runs on standard Python libraries with no external dependencies 
 ```bash
 python server.py
 ```
-Open your browser and navigate to:
-**[http://localhost:8000](http://localhost:8000)**
 
 ### 2. Run Automated Unit Tests
 ```bash
